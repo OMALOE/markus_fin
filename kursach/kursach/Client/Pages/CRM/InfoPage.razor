@@ -1,0 +1,89 @@
+﻿@page "/companies/{companyId}/crm/info"
+@inject HttpClient client
+@inject NavigationManager NM
+@layout CRMLayout
+@using Newtonsoft.Json;
+
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Информация</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary">Share</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary">Export</button>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle">
+            <span data-feather="calendar"></span>
+            This week
+        </button>
+    </div>
+</div>
+
+<div class="d-flex align-items-center">
+    <span class="fw-bold">Название: </span>
+    <span>&nbsp;@CompanyData?.PublicName</span>
+</div>
+<div class="d-flex align-items-center">
+    <span class="fw-bold">Описание: </span>
+    <span>&nbsp;@CompanyData?.Description</span>
+</div>
+<div class="d-flex align-items-center">
+    <span class="fw-bold">Тип фирмы: </span>
+    <span>&nbsp;@CompanyData?.LegalType</span>
+</div>
+<div class="d-flex align-items-center">
+    <span class="fw-bold">Юридическое название: </span>
+    <span>&nbsp;@CompanyData?.LegalName</span>
+</div>
+<div class="d-flex align-items-center">
+    <span class="fw-bold">Юридический адрес: </span>
+    <span>&nbsp;@CompanyData?.LegalAddress</span>
+</div>
+<div class="d-flex align-items-center">
+    <span class="fw-bold">Фактический адрес: </span>
+    <span>&nbsp;@CompanyData?.RealAddress</span>
+</div>
+<div class="d-flex align-items-center">
+    <span class="fw-bold">ИНН: </span>
+    <span>&nbsp;@CompanyData?.Tin</span>
+</div>
+<div class="d-flex align-items-center">
+    <span class="fw-bold">КПП: </span>
+    <span>&nbsp;@CompanyData?.Trrc</span>
+</div>
+<div class="d-flex align-items-center">
+    <span class="fw-bold">ОГРН: </span>
+    <span>&nbsp;@CompanyData?.Psrn</span>
+</div>
+<div class="d-flex align-items-center">
+    <span class="fw-bold">Регион доставки: </span>
+    <span>&nbsp;@CompanyData?.DeliveryRegion</span>
+</div>
+<div class="d-flex align-items-center">
+    <span class="fw-bold">Задержка доставки (дней): </span>
+    <span>&nbsp;@CompanyData?.DeliveryDelay</span>
+</div>
+<div class="d-flex align-items-center">
+    <span class="fw-bold">Время работы: </span>
+    <span>&nbsp;@CompanyData?.WorkHoursStart.ToShortTimeString() - @CompanyData?.WorkHoursEnd.ToShortTimeString()</span>
+</div>
+
+
+
+@code {
+
+    [Parameter]
+    public string CompanyId { get; set; }
+
+    public Company CompanyData { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        string response = await client.GetStringAsync($"api/companies/{CompanyId}");
+        Console.WriteLine(response);
+        CompanyData = JsonConvert.DeserializeObject<Company>(response);
+        StateHasChanged();
+    }
+
+
+}

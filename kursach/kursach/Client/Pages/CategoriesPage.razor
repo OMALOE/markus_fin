@@ -1,0 +1,20 @@
+﻿@page "/categories"
+@inject HttpClient client 
+<Separator Title="Категории" />
+<div class="d-flex flex-column">
+    @foreach (var item in Categories)
+    {
+        <NavLink href="@($"/categories/{item.Id}")"><span>@(Categories.IndexOf(item)+1) @item.Name</span></NavLink>
+    }
+</div>
+
+@code {
+    public List<Category> Categories { get; set; } = new List<Category>();
+    public List<TagsSubcategory> Tags { get; set; } = new List<TagsSubcategory>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Categories = await client.GetFromJsonAsync<List<Category>>("/api/products/categories");
+        StateHasChanged();
+    }
+}

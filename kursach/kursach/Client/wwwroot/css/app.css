@@ -1,0 +1,259 @@
+﻿@import url('open-iconic/font/css/open-iconic-bootstrap.min.css');
+
+html, body {
+    font-family: "Lato" ,'Helvetica Neue', Helvetica, Arial, sans-serif!important;
+    line-height: normal!important;
+}
+
+@font-face{
+    font-family: "Bodoni";
+    src: url("fonts/Bodoni.ttf") format('truetype');
+}
+@font-face{
+    font-family: "Lato";
+    src: url("fonts/latoregular.ttf") format('truetype');
+}
+a {
+    text-decoration: none;
+    color: inherit;
+}
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Bodoni Cyrillic';
+}
+
+.nav-header {
+    font-family: 'Bodoni Cyrillic';
+    font-size: 18px;
+
+}
+
+.bd-placeholder-img {
+    font-size: 1.125rem;
+    text-anchor: middle;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    user-select: none;
+}
+
+@media (min-width: 768px) {
+    .bd-placeholder-img-lg {
+        font-size: 3.5rem;
+    }
+}
+
+.orange-link {
+    color: #E8510C!important;
+}
+
+.login-input {
+    border: 2px solid #cacaca;
+    border-radius: 10px;
+    height: 40px;
+    outline: none;
+    padding: 5px;
+    width: 300px;
+    margin-bottom: 10px;
+    margin-top: 10px;
+}
+
+.navbar-icon-container {
+    height: 40px;
+    width: 40px;
+    background-color: #414141;
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
+.suppler-button {
+    background-color: #E8510C;
+    color: #ffffff;
+    border-radius: 10px;
+}
+
+.product-card-container {
+    height: 277px;
+    width: 235px;
+    min-width: 235px;
+    margin-bottom: 10px;
+    justify-self: center;
+}
+
+
+.product-card-button{
+
+}
+
+.money-label {
+    font-family: "Bodoni Cyrillic";
+    font-size: 18px;
+
+}
+
+.product-title {
+    font-size: 16px;
+    text-align: left;
+    font-weight: bold;
+}
+
+.product-company-label {
+    font-size: 14px;
+}
+
+.product-card-full-container {
+    width: 270px;
+    height: 350px;
+    min-width: 270px;
+    margin-bottom: 10px;
+    align-self: center;
+    justify-self: center;
+}
+
+.product-image {
+    max-height: 100%;
+    width: auto;
+}
+
+.separator {
+    display: flex;
+    align-items: center;
+    text-align: center;
+}
+
+    .separator::before,
+    .separator::after {
+        content: '';
+        flex: 1;
+        border-bottom: 1px solid #cacaca;
+    }
+
+    .separator:not(:empty)::before {
+        margin-right: .25em;
+    }
+
+    .separator:not(:empty)::after {
+        margin-left: .25em;
+    }
+
+.separator-title {
+    font-family: "Bodoni Cyrillic";
+    font-size: 36px;
+}
+
+.footer {
+    background-color: #414141;
+    height: 350px;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.scrollbar::-webkit-scrollbar {
+/*    display: none;*/
+    background-color: #e5e5e5;
+    border-radius: 20px;
+    height: 8px;
+    
+}
+
+.scrollbar::-webkit-scrollbar-thumb{
+    background-color: #cacaca;
+    border-radius: 20px;
+}
+/* Hide scrollbar for IE, Edge and Firefox */
+.scrollbar {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+}
+
+.company-banner-container {
+    
+}
+
+.categories-sidebar-title-company {
+    font-family: 'Bodoni Cyrillic';
+    font-size: 24px;
+}
+
+.category-title {
+    font-weight: bold;
+    font-size: 18px;
+    margin-top: 10px;
+}
+
+.tag-title {
+    font-size: 16px;
+}
+
+.categories-sidebar-company {
+    width: 300px;
+    height: auto;
+    margin-bottom: 30px;
+}
+
+.company-public-name {
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.company-legal-name {
+    font-size: 14px;
+    color: #cacaca;
+}
+
+.subscribe-button {
+    width: 155px;
+    height: 53px;
+    background-color: #e8510c;
+    border-radius: 10px;
+    font-size: 18px;
+    text-align: center;
+    color: #ffffff;
+}
+
+.verified-icon {
+    font-size: 16px!important;
+    color: #E7BC0D;
+    margin-left: 5px;
+}
+
+.additional-button-company {
+    border-radius: 10px;
+    background-color: #e5e5e5;
+    height: 40px;
+}
+
+
+.company-section-button-active {
+    color: #E8510C;
+    font-size: 18px;
+    font-family: "Bodoni Cyrillic";
+    text-decoration: underline;
+    margin-left: 10px;
+    margin-right: 10px;
+}
+.company-section-button {
+    color: #000000;
+    font-size: 18px;
+    font-family: "Bodoni Cyrillic";
+    text-decoration: underline;
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
+
+.company-tag-header {
+    font-size: 24px;
+    font-family: 'Bodoni Cyrillic';
+}
+.products-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    align-items: center;
+}
+
+
+.company-row {
+    width: 100%;
+    height: 65px;
+}
+
+
+

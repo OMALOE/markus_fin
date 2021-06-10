@@ -1,0 +1,119 @@
+﻿@page "/companies/new"
+@inject NavigationManager NM
+@inject HttpClient client
+@using Microsoft.AspNetCore.WebUtilities;
+@using Newtonsoft.Json;
+@using Newtonsoft.Json.Linq;
+
+
+@CustomerId
+
+    <div>
+        <div class="form-group">
+            <label for="formGroupExampleInput">Название фирмы</label>
+            <input type="text" class="form-control" id="formGroupExampleInput" placeholder="cool_business" @bind-value="NewCompany.PublicName">
+        </div>
+        <div class="form-group">
+            <label for="formGroupExampleInput2">Тип фирмы</label>
+            <select @bind="NewCompany.LegalType">
+                <option value="ООО">ООО</option>
+                <option value="ПАО">ПАО</option>
+                <option value="ИП">ИП</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="formGroupExampleInput2">Юридическое название</label>
+            <input type="text" class="form-control" id="formGroupExampleInput2" placeholder="Кул бизнес" @bind-value="NewCompany.LegalName">
+        </div>
+        <div class="form-group">
+            <label for="formGroupExampleInput2">ИНН</label>
+            <input type="text" class="form-control" id="formGroupExampleInput2" placeholder="7712345678" @bind-value="NewCompany.Tin">
+        </div>
+        <div class="form-group">
+            <label for="formGroupExampleInput2">КПП</label>
+            <input type="text" class="form-control" id="formGroupExampleInput2" placeholder="7712345678" @bind-value="NewCompany.Trrc">
+        </div>
+        <div class="form-group">
+            <label for="formGroupExampleInput2">ОГРН</label>
+            <input type="text" class="form-control" id="formGroupExampleInput2" placeholder="7712345678" @bind-value="NewCompany.Psrn">
+        </div>
+        <div class="form-group">
+            <label for="formGroupExampleInput2">Описание</label>
+            <input type="text" class="form-control" id="formGroupExampleInput2" placeholder="7712345678" @bind-value="NewCompany.Description">
+        </div>
+        <div class="form-group">
+            <label for="formGroupExampleInput2">Юридический адрес</label>
+            <input type="text" class="form-control" id="formGroupExampleInput2" placeholder="Россия, Москва, ул. Лубянка, д. 33" @bind-value="NewCompany.LegalAddress">
+        </div>
+        <div class="form-group">
+            <label for="formGroupExampleInput2">Фактический адрес</label>
+            <input type="text" class="form-control" id="formGroupExampleInput2" placeholder="Россия, Москва, ул. Лубянка, д. 33" @bind-value="NewCompany.RealAddress">
+        </div>
+        <div class="form-group">
+            <label for="formGroupExampleInput2">Страна</label>
+            <input type="text" class="form-control" id="formGroupExampleInput2" placeholder="Россия" @bind-value="NewCompany.Country">
+        </div>
+        <div class="form-group">
+            <label for="formGroupExampleInput2">Город</label>
+            <input type="text" class="form-control" id="formGroupExampleInput2" placeholder="Москва" @bind-value="NewCompany.City">
+        </div>
+        <div class="form-group">
+            <label for="formGroupExampleInput2">Регион доставки</label>
+            <select @bind="NewCompany.DeliveryRegion">
+                <option value="Country" selected>Страна</option>
+                <option value="Abroad">Зарубеж</option>
+                <option value="Town">Город</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="formGroupExampleInput2">Задержка в доставке</label>
+            <input type="number" class="form-control" id="formGroupExampleInput2" placeholder="Москва" @bind-value="NewCompany.DeliveryDelay">
+        </div>
+        <div class="form-group">
+            <label for="formGroupExampleInput2">Начало работы</label>
+            <input type="time" class="form-control" id="formGroupExampleInput2" placeholder="Москва" @bind-value="NewCompany.WorkHoursStart">
+        </div>
+        <div class="form-group">
+            <label for="formGroupExampleInput2">Конец работы</label>
+            <input type="time" class="form-control" id="formGroupExampleInput2" placeholder="Москва" @bind-value="NewCompany.WorkHoursEnd">
+        </div>
+        <button class="btn btn-primary" @onclick="CreateNewCompany">Создать фирму</button>
+    </div>
+
+@code {
+    public string CustomerId { get; set; }
+    public Company NewCompany { get; set; } = new Company() { Id=Guid.NewGuid().ToString()};
+    public CompanyAdmin Owner { get; set; } = new CompanyAdmin();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var uri = NM.ToAbsoluteUri(NM.Uri);
+        if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("customerId", out var _value))
+        {
+            CustomerId = Convert.ToString(_value);
+        }
+        Owner.Companyid = NewCompany.Id;
+        Owner.Customerid = CustomerId;
+        Owner.Role = "owner";
+        StateHasChanged();
+    }
+
+    public async Task CreateNewCompany()
+    {
+        JObject json = new JObject();
+
+
+        json.Add(new JProperty("company", JsonConvert.SerializeObject(NewCompany)));
+        json.Add(new JProperty("owner", JsonConvert.SerializeObject(Owner)));
+
+
+        var data = new StringContent(json.ToString(), Encoding.UTF8, "application/json");
+        Console.WriteLine(await data.ReadAsStringAsync());
+        HttpResponseMessage response = await client.PostAsync("/api/companies", data);
+        if (response.IsSuccessStatusCode)
+        {
+            NM.NavigateTo($"/companies/{NewCompany.Id}/crm/info");
+        }
+        Console.WriteLine(await response.Content.ReadAsStringAsync());
+    }
+}

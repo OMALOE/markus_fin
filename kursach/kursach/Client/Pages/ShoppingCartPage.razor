@@ -1,0 +1,172 @@
+﻿@page "/cart"
+@inject CartHelper cartHelper
+@inject HttpClient client
+@inject NavigationManager NM
+@inject Blazored.LocalStorage.ILocalStorageService localStorage
+@using Newtonsoft.Json.Linq;
+@using Newtonsoft.Json;
+<Separator Title="Корзина" />
+<div class="d-flex flex-row">
+    <span class="fw-bold">Промокод: </span>
+    <input type="text" @bind-value="Promocode"/>
+    <button class="btn btn-primary" @onclick="SubmitPromocode">Применить</button>
+</div>
+<table class="table">
+    <thead>
+        <tr>
+            <th scope="col">#</th>
+            <th scope="col">Название</th>
+            <th scope="col">Количество</th>
+            <th scope="col">Скидка</th>
+            <th scope="col">Сумма</th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var item in cartHelper?.Cart)
+    {
+        <tr>
+            <th scope="row">@(cartHelper.Cart.IndexOf(item) + 1)</th>
+            <td>@item.Product.Fullname</td>
+            <td><input type="number" min="1" max="@item.Product.Available" step="1" value="@item.Amount" @oninput="@((e) => OnAmountChanged(e, cartHelper.Cart.IndexOf(item)))"/> </td>
+            <td>@item.Discount</td>
+            <td>
+                @item.TotalPrice
+                <button class="btn btn-danger" @onclick="@(() => DeleteItem(cartHelper.Cart.IndexOf(item)))">x</button>
+            </td>
+        </tr>
+    }
+        
+    </tbody>
+</table>
+
+<button @onclick="ClearCart">Очистить корзину</button>
+<Separator Title="Информация о доставке" />
+<div class="form-group">
+    <label for="formGroupExampleInput">Адрес доставки</label>
+    <input type="text" class="form-control" id="formGroupExampleInput" placeholder="ЛЛ" @bind-value="CartInfo.Address">
+</div>
+Дата доставки
+<input type="date" @bind-value="CartInfo.DeliveryDate"/>
+<button @onclick="PostOrder">Отправить</button>
+
+@code {
+    public Order CartInfo { get; set; } = new Order();
+    public string Promocode { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        cartHelper.Cart = await localStorage.GetItemAsync<List<OrderProduct>>("cart");
+        CartInfo = new Order() {
+            Id= Guid.NewGuid().ToString(),
+            OrderNumber=new Random().Next(111111,999999),
+            OrderDate=DateTime.Now,
+            OrderStatus="pending",
+            IsPaid=false,
+            IsConfirmed=false,
+            Customerid= "0e6f7274-f188-58c4-1a45-23637c0ab7aa",
+            DeliveryDate=DateTime.Now
+        };
+        Console.WriteLine(CartInfo.OrderNumber);
+        StateHasChanged();
+    }
+
+
+    public async void ClearCart()
+    {
+        cartHelper.ClearCart();
+        await localStorage.SetItemAsync("cart", cartHelper.Cart);
+        StateHasChanged();
+    }
+
+    public async void DeleteItem(int index)
+    {
+        cartHelper.RemoveFromCart(index);
+        StateHasChanged();
+    }
+
+    public async void OnAmountChanged(ChangeEventArgs e, int index)
+    {
+        decimal originalPrice = cartHelper.Cart[index].TotalPrice / cartHelper.Cart[index].Amount;
+        cartHelper.Cart[index].Amount =  Convert.ToInt32(e.Value);
+        cartHelper.Cart[index].TotalPrice = cartHelper.Cart[index].Amount * originalPrice;
+
+        await localStorage.SetItemAsync("cart", cartHelper.Cart);
+        StateHasChanged();
+    }
+
+    public async void PostOrder()
+    {
+        JObject json = new JObject();
+        CartInfo.OrderProducts = cartHelper.Cart;
+        foreach (var item in CartInfo.OrderProducts)
+        {
+            item.Orderid = CartInfo.Id;
+            item.Product = null;
+        }
+
+        json.Add(new JProperty("order", JsonConvert.SerializeObject(CartInfo)));
+
+
+        var data = new StringContent(json.ToString(), Encoding.UTF8, "application/json");
+        Console.WriteLine(await data.ReadAsStringAsync());
+        HttpResponseMessage response = await client.PostAsync("/api/orders", data);
+
+        if (response.IsSuccessStatusCode)
+        {
+            ClearCart();
+            CartInfo = null;
+            NM.NavigateTo(NM.BaseUri);
+        }
+        Console.WriteLine(await response.Content.ReadAsStringAsync());
+        StateHasChanged();
+    }
+
+    public async void SubmitPromocode()
+    {
+        if (string.IsNullOrEmpty(Promocode))
+            return;
+        var response = await client.GetAsync($"/api/promocodes?name={Promocode}");
+        if (!response.IsSuccessStatusCode)
+        {
+            Console.WriteLine(await response.Content.ReadAsStringAsync());
+            return;
+        }
+        string json = await response.Content.ReadAsStringAsync();
+        Promocode promo = JsonConvert.DeserializeObject<Promocode>(json);
+        if(promo.Condition == "all")
+        {
+            foreach (var item in cartHelper.Cart)
+            {
+                if(item.Product.Companyid == promo.Companyid)
+                {
+                    item.Discount = promo.Discount * item.Amount;
+                    if (item.TotalPrice < item.Discount)
+                    {
+                        item.Discount = item.Discount - item.TotalPrice;
+                        item.TotalPrice = 0;
+                        continue;
+                    }
+                    item.TotalPrice -= item.Discount;
+                }
+            }
+            await localStorage.SetItemAsync<List<OrderProduct>>("cart", cartHelper.Cart);
+            StateHasChanged();
+            return;
+        }
+        string[] conditions = promo.Condition.Split("|");
+        foreach (var item in conditions)
+        {
+            string[] keyValue = item.Split("=");
+            foreach (var product in cartHelper.Cart)
+            {
+                if(keyValue[0] == "tag" && product.Product.Tagid == keyValue[1] && product.Product.Companyid == promo.Companyid)
+                {
+                    product.Discount = promo.Discount;
+                    product.TotalPrice -= product.Discount;
+                }
+            }
+        }
+        await localStorage.SetItemAsync<List<OrderProduct>>("cart", cartHelper.Cart);
+        StateHasChanged();
+    }
+}

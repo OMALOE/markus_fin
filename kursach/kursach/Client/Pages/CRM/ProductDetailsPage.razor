@@ -1,0 +1,174 @@
+﻿@page "/companies/{companyId}/crm/products/{productId}"
+@inject NavigationManager NM
+@inject HttpClient client
+@layout CRMLayout
+@using Newtonsoft.Json;
+@using Newtonsoft.Json.Linq;
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">@Product?.Fullname</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="OnEditClicked">@(isEditing ? "Отмена" : "Редактировать")</button>
+            @if (isEditing)
+            {
+                <button type="button" class="btn btn-sm btn-outline-success" @onclick="OnSaveClicked">Cохранить</button>
+            }
+            <button type="button" class="btn btn-sm btn-outline-secondary">Export</button>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle">
+            <span data-feather="calendar"></span>
+            This week
+        </button>
+    </div>
+</div>
+
+<div class="d-flex align-items-center">
+    <span class="fw-bold">Название: </span>
+    @if (isEditing)
+    {
+        <input type="text" class="form-control" @bind-value="Product.Fullname"/>
+    } else
+    {
+        <span>&nbsp;@Product?.Fullname</span>
+    }
+</div>
+<div class="d-flex align-items-center">
+    <span class="fw-bold">Описание: </span>
+    @if (isEditing)
+    {
+        <input type="text" class="form-control" @bind-value="Product.Description" />
+    }
+    else
+    {
+        <span>&nbsp;@Product?.Description</span>
+    }
+</div>
+<div class="d-flex align-items-center">
+    <span class="fw-bold">Цена </span>
+    @if (isEditing)
+    {
+        <input type="number" min="0" class="form-control" @bind-value="Product.Price" />
+    }
+    else
+    {
+        <span>&nbsp;@Product?.Price</span>
+    }
+</div>
+<div class="d-flex align-items-center">
+    <span class="fw-bold">Доступно на складе </span>
+    @if (isEditing)
+    {
+        <input type="number" min="0" class="form-control" @bind-value="Product.Available" />
+    }
+    else
+    {
+        <span>&nbsp;@Product?.Available</span>
+    }
+</div>
+<div class="d-flex align-items-center">
+    <span class="fw-bold">Имя тэга: </span>
+    @if (isEditing)
+    {
+        <select class="user-select" @oninput="OnTagChanged">
+            @foreach (var item in tags)
+            {
+                <option value="@item.Id" selected="@(item.Id == Product.Tag.Id ? true : false)">@(tags.IndexOf(item) + 1). @item.Name</option>
+            }
+        </select>           
+
+    }
+    else
+    {
+        <span>&nbsp;@Product?.Tag?.Name</span>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string CompanyId { get; set; }
+    [Parameter]
+    public string ProductId { get; set; }
+    private bool isEditing = false;
+    private List<Tag> tags = new List<Tag>();
+    private bool isChanged = false;
+
+    public Product Product { get; set; } = new Product();
+    public Product OriginalProduct { get; set; } = new Product();
+
+    protected override async Task OnInitializedAsync()
+    {
+        OriginalProduct = await client.GetFromJsonAsync<Product>($"/api/products/{ProductId}");
+        Product = await client.GetFromJsonAsync<Product>($"/api/products/{ProductId}");
+        tags = await client.GetFromJsonAsync<List<Tag>>("/api/products/categories/subcategories/tags");
+    }
+
+    public void OnEditClicked()
+    {
+        isEditing = !isEditing;
+        if(isEditing == false)
+        {
+            Console.WriteLine("CancelEdit!");
+        }
+        StateHasChanged();
+    }
+
+    public void OnSaveClicked()
+    {
+        isEditing = !isEditing;
+        SaveChanges();
+        StateHasChanged();
+    }
+
+    public async void SaveChanges()
+    {
+
+        foreach (var propertyInfo in Product.GetType().GetProperties())
+        {
+            var originalProprertyInfo = OriginalProduct.GetType().GetProperty(propertyInfo.Name);
+            var value1 = propertyInfo.GetValue(Product).ToString();
+            var value2 = OriginalProduct.GetType().GetProperty(propertyInfo.Name).GetValue(OriginalProduct).ToString();
+            if (propertyInfo.GetValue(Product).ToString() != OriginalProduct.GetType().GetProperty(propertyInfo.Name).GetValue(OriginalProduct).ToString())
+            {
+                bool isSuccess = await PushChangesToServer(propertyInfo.Name, propertyInfo.GetValue(Product));
+                if (!isSuccess)
+                    return;
+            }
+        }
+
+    }
+
+    public void OnTagChanged(ChangeEventArgs e)
+    {
+        Tag newTag = tags.FirstOrDefault(t => t.Id == e.Value.ToString());
+        Product.Tag = newTag;
+        Product.Tagid = newTag.Id;
+        StateHasChanged();
+    }
+
+    public async Task<bool> PushChangesToServer(string propName, object propValue)
+    {
+        JObject json = new JObject(new JProperty(propName, propValue));
+
+        var request = new StringContent(json.ToString(), Encoding.UTF8, "application/json");
+        var response = await client.PatchAsync($"api/products/{Product.Id}/{propName}", request);
+
+        Console.WriteLine(await response.Content.ReadAsStringAsync());
+        return response.IsSuccessStatusCode;
+    }
+
+    public bool CheckChanges()
+    {
+        bool isChanged = false;
+        foreach (var propertyInfo in Product.GetType().GetProperties())
+        {
+            var originalProprertyInfo = OriginalProduct.GetType().GetProperty(propertyInfo.Name);
+            if (propertyInfo.GetValue(Product) != OriginalProduct.GetType().GetProperty(propertyInfo.Name).GetValue(OriginalProduct))
+            {
+                isChanged = true;
+            }
+        }
+        return isChanged;
+    }
+
+}

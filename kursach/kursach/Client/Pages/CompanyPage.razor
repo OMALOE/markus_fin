@@ -1,0 +1,42 @@
+﻿@page "/companies/{companyId}"
+@inject HttpClient client
+@inject NavigationManager NM; 
+
+    <div class="d-flex flex-column">
+        <Separator Title="Информация о компании"/>
+        <img style="width:100px; height: 100px;" src="@(CompanyData?.Logo == null ? BlankPictureUrl : $"{client.BaseAddress}api/{CompanyData?.Logo.Path}")" />
+        <span>@@@CompanyData?.PublicName</span>
+        <span>@CompanyData?.Description</span>
+        <a class="btn btn-secondary" style="width: 150px;" href="@(NM.Uri + "/crm/info")">Перейти в CRM</a>
+        @if (CompanyData == null)
+        {
+            <img width="100" src="Spinner.svg" />
+        }
+        <Separator Title="Товары" />
+        @if (CompanyProducts.Count == 0)
+        {
+            <img width="100" src="Spinner.svg" />
+        }
+        <div class="d-flex flex-wrap">
+            @foreach (var item in CompanyProducts)
+            {
+                <ProductCard ProductData="item" />
+            }
+        </div>
+    </div>
+
+@code {
+    [Parameter]
+    public string CompanyId { get; set; }
+    public Company CompanyData { get; set; }
+    public List<Product> CompanyProducts { get; set; } = new List<Product>();
+    private string BlankPictureUrl = "https://images.ru.prom.st/415108211_larek-kupit-v.jpg";
+
+    protected override async Task OnInitializedAsync()
+    {
+        CompanyData = await client.GetFromJsonAsync<Company>($"/api/companies/{CompanyId}");
+        StateHasChanged();
+        CompanyProducts = await client.GetFromJsonAsync<List<Product>>($"/api/companies/{CompanyId}/products");
+        StateHasChanged();
+    }
+}

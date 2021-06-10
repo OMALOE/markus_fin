@@ -1,0 +1,90 @@
+﻿@using Newtonsoft.Json.Linq;
+
+<tr>
+    <th scope="row">
+        @(Index+1)
+    </th>
+    <td>
+        <input type="text" class="form-control" @oninput="OnNameChanged" />
+    </td>
+    <td>
+        @foreach (var option in Options)
+        {
+            <label title="@option.Name">@option.Name</label>
+            <select @onchange="(e) => OnValueChanged(e, Options.IndexOf(option))">
+                @foreach (var value in option.Values)
+                {
+                    <option value="@value">@value</option>
+                }
+            </select>
+        }
+    </td>
+    <td>
+        <input type="number" min="0" placeholder="0" @oninput="OnPriceChanged"/>
+    </td>
+    <td>
+        <input type="number" min="0" placeholder="0" @oninput="OnQuantityChanged"/>
+        <button class="btn btn-danger" @onclick="OnDeleteClicked"><span class="material-icons">clear</span></button>
+    </td>
+</tr>
+
+@code {
+    [Parameter]
+    public Action<Variation, List<VariationOption>, int> OnVariationChanged { get; set; }
+    [Parameter]
+    public Action<int> OnDelete { get; set; }
+    [Parameter]
+    public int Index { get; set; }
+    [Parameter]
+    public List<Option> Options { get; set; } = new List<Option>();
+    public List<VariationOption> Values { get; set; } = new List<VariationOption>();
+    public Variation VariationData { get; set; } = new Variation();
+
+    protected override void OnInitialized()
+    {
+        foreach (var item in Options)
+        {
+            Values.Add(new VariationOption() {Name=item.Name, Value=item.Values[0] });
+
+        }
+
+    }
+
+    public void OnNameChanged(ChangeEventArgs e)
+    {
+        Console.WriteLine(e.Value.ToString());
+        VariationData.Name = e.Value.ToString();
+        OnVariationChanged?.Invoke(VariationData, Values, Index);
+        StateHasChanged();
+    }
+
+    public void OnValueChanged(ChangeEventArgs e, int optionIndex)
+    {
+        Values[optionIndex].Value = e.Value.ToString();
+        Console.WriteLine($"Name: {Values[optionIndex].Name} ; Value: {Values[optionIndex].Value}");
+        OnVariationChanged?.Invoke(VariationData, Values, Index);
+        StateHasChanged();
+    }
+
+    public void OnPriceChanged(ChangeEventArgs e)
+    {
+        VariationData.Price = Convert.ToDecimal(e.Value.ToString());
+        Console.WriteLine(VariationData.Price);
+        OnVariationChanged?.Invoke(VariationData, Values, Index);
+        StateHasChanged();
+    }
+    
+    public void OnQuantityChanged(ChangeEventArgs e)
+    {
+        VariationData.Quantity = Convert.ToInt32(e.Value.ToString());
+        Console.WriteLine(VariationData.Quantity);
+        OnVariationChanged?.Invoke(VariationData, Values, Index);
+        StateHasChanged();
+    }
+
+    public void OnDeleteClicked(EventArgs e)
+    {
+        OnDelete?.Invoke(Index);
+    }
+}
+

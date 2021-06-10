@@ -1,0 +1,64 @@
+﻿@inject HttpClient client
+@inject NavigationManager NM
+@using Newtonsoft.Json;
+@using Newtonsoft.Json.Linq;
+
+<div class="card product-card-container flex-column py-2 justify-content-between mx-2">
+    <div class="d-flex px-2 justify-content-center align-items-center" style="max-height:128px;" @onclick="OpenProductPage">
+        <img src="@(ImgUri)" class="card-img-top" style="height: 100%;width:auto;" />
+    </div>
+    <div class="d-flex flex-row align-items-center px-2 justify-content-between">
+        <div class="d-flex flex-row align-items-center">
+            <span class="material-icons" style="font-size:30px">account_circle</span>
+            <NavLink class="nav-link" href="@($"/companies/{ProductData?.Companyid}")"><span>@@@ProductData?.Company.PublicName</span></NavLink>
+            <span class="material-icons" style="color:#E7BC0D;font-size:20px;">check_circle</span>
+        </div>
+        <span class="material-icons">more_horiz</span>
+    </div>
+    <div class="container-fluid px-2" style="height:48px;overflow:hidden;">
+        <a href="@ProductUri">
+            <span class="product-title">@ProductData?.Fullname</span>
+        </a>
+    </div>
+    <div class="container-fluid d-flex flex-row justify-content-between align-items-center p-2">
+
+        <div class="d-flex flex-row">
+            <span class="money-label">$@ProductData?.Price</span>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public Product ProductData { get; set; }
+    public Company CompanyData { get; set; }
+    public string ImgUri { get; set; } = "";
+    public string ProductUri { get; set; } = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        ProductUri = $"{NM.BaseUri}products/{ProductData.Id}";
+        if (ProductData.ProductImages.Count == 0)
+        {
+            var response = await client.GetStringAsync("https://dog.ceo/api/breeds/image/random");
+            ImgUri = JsonConvert.DeserializeObject<JObject>(response)["message"].ToString();
+            return;
+        }
+        if(ProductData.Company == null)
+        {
+            Console.WriteLine("djndjncdj");
+            ProductData.Company = new Company();
+            ProductData.Company = await client.GetFromJsonAsync<Company>($"/api/companies/{ProductData.Companyid}");
+        }
+        Console.WriteLine(ProductData.ProductImages.ToList().FirstOrDefault().Image);
+        ImgUri = $"{client.BaseAddress}api{ProductData.ProductImages.ToList().FirstOrDefault().Image.Path}";
+        Console.WriteLine(ProductUri);
+        StateHasChanged();
+    }
+
+    public void OpenProductPage()
+    {
+        NM.NavigateTo(ProductUri);
+    }
+
+}

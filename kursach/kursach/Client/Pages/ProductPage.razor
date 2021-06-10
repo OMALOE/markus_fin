@@ -1,0 +1,129 @@
+﻿@page "/products/{productId}"
+@inject HttpClient client
+@inject NavigationManager NM
+@inject Blazored.LocalStorage.ILocalStorageService localStorage
+@inject CartHelper cartHelper
+@using Newtonsoft.Json;
+@using Newtonsoft.Json.Linq;
+@using System.IO;
+    <div class="container bootdey">
+        <div class="col-md-12">
+            <section class="panel">
+                <div class="panel-body d-flex">
+                    <div class="col-md-6">
+                        <div class="pro-img-details">
+                            <img src="@(ImageUris.FirstOrDefault())" alt="">
+                        </div>
+                        <div class="pro-img-list">
+                            @foreach (var item in ImageUris)
+                            {
+                                <a>
+                                    <img width="100" src="@(item)" alt=""/>
+                                </a>
+                            }
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h4 class="pro-d-title">
+                            <span class="product-title">
+                                @ProductData?.Fullname
+                            </span>
+                        </h4>
+                        <NavLink href="@($"/companies/{ProductData?.Companyid}")">
+                            @ProductData?.Company?.PublicName
+                        </NavLink>
+                        <p>
+                            @ProductData?.Description
+                        </p>
+                        <div class="product_meta">
+                            <span class="posted_in"> <strong>Тэг:</strong> <a rel="tag" href="#">@ProductData?.Tag?.Name</a></span>
+                        </div>
+                        <div class="m-bot15"> <strong>Цена : </strong><span class="pro-price"> $@ProductData?.Price</span></div>
+                        <div class="form-group">
+                            @if(ProductData?.VariationOptions?.Count > 0)
+                            {
+                                <form class="d-flex flex-column">
+                                    <label class="fw-bold">Варианты</label>
+                                    @foreach (var option in ProductData?.VariationOptions?.GroupBy(vo => vo.ProductId))
+                                    {
+                                        <a class="d-flex flex-column" style="border: 1px solid black;" @onclick="@(() => { NM.NavigateTo($"{NM.BaseUri}products/{option.First().Product.Id}", true); })">
+                                            <span>Товар: @option.First().Product.Fullname</span>
+                                            @foreach (var item in option)
+                                            {
+                                                <span><u>@item.Name</u>: @item.Value</span>
+                                            }
+                                        </a>
+
+                                    }
+                                </form>
+                            }
+                            <label>Количество</label>
+                            @if(ProductData?.Available > 0)
+                            {
+                                <input type="number" min="0" max="@ProductData?.Available" step="1" placeholder="1" class="form-control quantity" @bind-value="OProduct.Amount">
+                            } else
+                            {
+                                <span>Нет в наличии</span>
+                            }
+                        </div>
+                        <p>
+                            <button class="btn btn-round btn-danger" type="button" @onclick="AddToCart"><i class="fa fa-shopping-cart"></i>Добавить в корзину</button>
+                        </p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+@code {
+    [Parameter]
+    public string ProductId { get; set; }
+    public Product ProductData { get; set; }
+    public OrderProduct OProduct { get; set; } = new OrderProduct();
+    public List<string> ImageUris { get; set; } = new List<string>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        ProductData = await client.GetFromJsonAsync<Product>($"/api/products/{ProductId}");
+        foreach (var item in ProductData.ProductImages.ToList())
+        {
+            ImageUris.Add($"{client.BaseAddress}api"+item.Image.Path);
+        }
+        Console.WriteLine(ProductData.VariationOptions.Count);
+        if(ProductData.ProductImages.ToList().Count == 0)
+        {
+            for (int i = 0; i < 3; i++)
+            {
+                var response = await client.GetStringAsync("https://dog.ceo/api/breeds/image/random");
+                ImageUris.Add(JsonConvert.DeserializeObject<JObject>(response)["message"].ToString());
+            }
+        }
+        if (ProductData.Company == null)
+        {
+            ProductData.Company = await client.GetFromJsonAsync<Company>($"/api/companies/{ProductData.Companyid}");
+        }
+
+        var cart = await localStorage.GetItemAsync<List<OrderProduct>>("cart");
+        foreach (var item in cart)
+        {
+            if(item.Productid == ProductId)
+            {
+                OProduct.Amount = item.Amount;
+                break;
+            }
+        }
+
+        StateHasChanged();
+    }
+
+    public void AddToCart()
+    {
+        if(OProduct.Amount == 0)
+        {
+            return;
+        }
+        OProduct.TotalPrice = OProduct.Amount * ProductData.Price;
+        OProduct.Productid = ProductId;
+        OProduct.Product = ProductData;
+        cartHelper.AddItemToCart(OProduct);
+    }
+}

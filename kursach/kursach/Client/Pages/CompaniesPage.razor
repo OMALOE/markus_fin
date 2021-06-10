@@ -1,0 +1,22 @@
+﻿@page "/companies"
+@inject HttpClient client
+
+<Separator Title="Компании" />
+<div class="d-flex flex-column">
+    @foreach (var item in Companies)
+    {
+        <a href="/companies/@item.Id">@item.PublicName</a>
+    }
+</div>
+
+@code {
+    public List<Company> Companies { get; set; } = new List<Company>();
+
+    protected async override Task OnInitializedAsync()
+    {
+        Companies = await client.GetFromJsonAsync<List<Company>>("/api/companies");
+        StateHasChanged();
+    }
+
+
+}

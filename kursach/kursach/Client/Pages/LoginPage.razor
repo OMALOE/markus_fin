@@ -1,0 +1,26 @@
+﻿@page "/login"
+<title>Логин | Suppler.store</title>
+<div class="container-fluid p-0 d-flex flex-row justify-content-center align-items-center">
+    <div class="d-flex flex-column align-items-center" style="width:50%;">
+        <div style="width:300px;">
+            <h4 class="">Вход в учетную запись</h4>
+            <span>Логин</span>
+            <input class="login-input"/>
+            <span>Пароль</span>
+            <input type="password" class="login-input"/>
+            <NavLink href="/account"><button class="btn suppler-button" style="width:100%;">Войти</button></NavLink>
+            <span style="align-self: flex-end;">Нет аккаунта? <NavLink href="/register"><a class="orange-link">Зарегистрироваться</a></NavLink></span>
+        </div>
+    </div>
+    <div style="height:474px;width:1px;background-color:#cacaca;"></div>
+    <div class="d-flex flex-column align-items-center" style="width: 50%;">
+        <div class="align-items-start" style="width:70%;">
+            <h1>Добро пожаловать!</h1>
+            <span><a class="orange-link">Узнать больше</a> о наших преимуществах.</span>
+        </div>
+    </div>
+</div>
+
+@code {
+
+}

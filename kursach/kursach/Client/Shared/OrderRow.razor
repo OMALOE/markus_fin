@@ -1,0 +1,58 @@
+﻿@inject NavigationManager NM
+@inject HttpClient client
+@using Newtonsoft.Json.Linq
+
+
+<tr style="cursor:pointer" @ondblclick="OnRowClicked">
+    <th scope="row">@OrderData.OrderNumber</th>
+    <td>@OrderData.OrderDate</td>
+    <td>$@Sum</td>
+    <td>
+        <select @onchange="OnStatusChanged">
+
+            @foreach (var item in statuses)
+            {
+                <option value="@item" selected="@(OrderData.OrderStatus == item? true : false)">@item</option>
+            }
+        </select>
+    </td>
+    <td>
+        <span class="material-icons">info</span>
+    </td>
+</tr>
+
+@code {
+    [Parameter]
+    public Order OrderData { get; set; }
+    [Parameter]
+    public string CompanyId { get; set; }
+    string[] statuses = { "pending", "processing", "assembly", "sent" };
+
+    private decimal Sum = 0;
+
+    protected override void OnInitialized()
+    {
+        foreach (var product in OrderData.OrderProducts)
+        {
+            Sum += product.TotalPrice;
+        }
+        StateHasChanged();
+    }
+
+    private void OnRowClicked(MouseEventArgs e)
+    {
+        NM.NavigateTo($"/companies/crm/{CompanyId}/orders/{OrderData.Id}");
+    }
+
+    private async void OnStatusChanged(ChangeEventArgs e)
+    {
+        OrderData.OrderStatus = e.Value.ToString();
+        JObject json = new JObject(new JProperty("order", JToken.FromObject(OrderData)));
+
+        var request = new StringContent(json.ToString(), Encoding.UTF8, "application/json");
+        var response = await client.PutAsync($"/api/orders/{OrderData.Id}", request);
+        Console.WriteLine(response.StatusCode + OrderData.OrderStatus);
+
+    }
+}
+ 

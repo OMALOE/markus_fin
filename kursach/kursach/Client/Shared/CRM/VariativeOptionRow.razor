@@ -1,0 +1,75 @@
+﻿@namespace kursach.Client.Shared.CRM
+@using Newtonsoft.Json.Linq;
+
+<tr>
+    <th scope="row">
+        @(Index+1)
+    </th>
+    <td>
+        <input type="text" class="form-control" @oninput="OnNameChanged" value="@Result.Name" />
+    </td>
+    <td>
+        @foreach (var item in Result.Values)
+        {
+            <div class="d-flex flex-row">
+                <input value="@Result.Values[Result.Values.IndexOf(item)]" type="text" class="form-control" @onchange="@((e) => OnValueNameChanged(e, Result.Values.IndexOf(item)))" />
+                <button class="btn btn-danger" @onclick="() => OnDeleteClicked(Result.Values.IndexOf(item))"><span class="material-icons">clear</span></button>
+            </div>
+        }
+        <button class="btn btn-secondary" @onclick="@OnButtonClick" disabled="@(Result.Name == "" || Result.Values.Any(v => v == "")? true : false)"><span class="material-icons">add</span></button>
+        <button class="btn btn-danger" @onclick="OnDeleteRowClicked"><span class="material-icons">Удалить свойство</span></button>
+    </td>
+</tr>
+
+@code {
+    [Parameter]
+    public Action<Option, int> OnRowChanged { get; set; }
+    [Parameter]
+    public Action<int> OnRowDeleted { get; set; }
+    [Parameter]
+    public int Index { get; set; }
+    public List<string> Values { get; set; } = new List<string>();
+    [Parameter]
+    public Option Result { get; set; } = new Option();
+
+
+
+    protected override void OnInitialized()
+    {
+
+    }
+
+    public void OnNameChanged(ChangeEventArgs e)
+    {
+        Result.Name = e.Value.ToString();
+        OnRowChanged.Invoke(Result, Index);
+
+        StateHasChanged();
+    }
+
+    public void OnValueNameChanged(ChangeEventArgs e, int index)
+    {
+        Console.WriteLine(Values.Count);
+        Result.Values[index] = e.Value.ToString();
+        Console.WriteLine(Result.ToString());
+        OnRowChanged.Invoke(Result, Index);
+        StateHasChanged();
+    }
+
+    public void OnButtonClick()
+    {
+        Result.Values.Add("");
+    }
+
+    public void OnDeleteClicked(int index)
+    {
+        Result.Values.RemoveAt(index);
+        OnRowChanged?.Invoke(Result, Index);
+        StateHasChanged();
+    }
+
+    public void OnDeleteRowClicked()
+    {
+        OnRowDeleted?.Invoke(Index);
+    }
+}

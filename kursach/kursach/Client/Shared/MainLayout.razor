@@ -1,0 +1,35 @@
+﻿@inherits LayoutComponentBase
+
+<nav class="navbar navbar-expand-sm navbar-light bg-white shadow-sm pt-0 pb-0" style="height:60px">
+    <NavMenu />
+</nav>
+
+<div class="flex-column container-fluid p-0" style="min-height:80vh">
+    <div class="main">
+        <div class="content px-5 py-2">
+            @Body
+        </div>
+    </div>
+    <footer class="footer container-fluid text-white py-4">
+        <div class="container-fluid p-0 d-flex flex-row justify-content-between">
+            <div class="container p-0 d-flex flex-row justify-content-start">
+                <div class="d-flex flex-column mx-4">
+                    <span class="font-weight-bold mb-2">Хотите продавать в нашей сети?</span>
+                    <NavLink href="/companies/new"><a class="mb-1">Зарегистрировать компанию</a></NavLink>
+                    <NavLink href="/markus"><a class="mb-1">Узнать подробнее о Markus</a></NavLink>
+                    <NavLink href="/markus"><a class="mb-1">Условия сотрудничества</a></NavLink>
+                </div> 
+                <div class="d-flex flex-column mx-4">
+                    <span class="font-weight-bold mb-2">Хотите покупать?</span>
+                    <NavLink href="/register"><a class="mb-1">Зарегистрироваться</a></NavLink>
+                    <NavLink href="/markus"><a class="mb-1">Markus для покупателей</a></NavLink>
+                    <NavLink href="/markus"><a class="mb-1">Наши преимущества</a></NavLink>
+                </div>
+            </div>
+            <div class="d-flex justify-content-end" style="width:50%;">
+                <span>Markus</span>
+            </div>
+        </div>
+    </footer>
+</div>
+

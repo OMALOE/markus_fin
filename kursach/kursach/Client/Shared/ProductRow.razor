@@ -1,0 +1,29 @@
+﻿@inject NavigationManager NM
+
+<tr style="cursor:pointer" @onclick="OnRowClicked">
+    <th scope="row">@Index</th>
+    <td>@ProductData.Fullname</td>
+    <td>@ProductData.Available</td>
+    <td>$@ProductData.Price</td>
+    <td>
+        <span class="material-icons">info</span>
+    </td>
+</tr>
+
+@code {
+    [Parameter]
+    public Product ProductData { get; set; }
+    [Parameter]
+    public int Index { get; set; }
+
+
+    protected override void OnInitialized()
+    {
+        
+    }
+
+    private void OnRowClicked(MouseEventArgs e)
+    {
+        NM.NavigateTo(NM.Uri + $"/{ProductData.Id}");
+    }
+}

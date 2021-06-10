@@ -1,0 +1,67 @@
+﻿@page "/companies/crm/{companyId}/orders/{orderId}"
+@inject HttpClient client
+@inject NavigationManager NM
+@layout CRMLayout
+@using Newtonsoft.Json;
+@using Newtonsoft.Json.Linq;
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Заказ №@OrderInfo?.OrderNumber</h1>
+</div>
+
+<div class="d-flex flex-column align-items-start">
+    <div class="d-flex flex-column">
+        <span>Клиент: @OrderInfo?.Customer.Firstname</span>
+        <span>Номер клиента: @OrderInfo?.Customer.Phone</span>
+    </div>
+    <table class="table">
+        <thead>
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">Товар</th>
+                <th scope="col">Количество</th>
+                <th scope="col">Сумма</th>
+                <th scope="col">Скидка</th>
+                <th scope="col">Действие</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var order in OrderProducts)
+            {
+                <OrderProductRow Index="@OrderProducts.IndexOf(order)" OProduct="@order" NotifyRowSaved="OnRowChanged"/>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    [Parameter]
+    public string CompanyId { get; set; }
+    [Parameter]
+    public string OrderId { get; set; }
+
+    public List<OrderProduct> OrderProducts { get; set; } = new List<OrderProduct>();
+    public Order OrderInfo { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        string orderProductsResponse = await client.GetStringAsync($"/api/orders/{OrderId}/products?companyId={CompanyId}");
+        string orderResponse = await client.GetStringAsync($"/api/orders/{OrderId}");
+        Console.WriteLine(orderResponse);
+        OrderProducts = JsonConvert.DeserializeObject<List<OrderProduct>>(orderProductsResponse);
+        OrderInfo = JsonConvert.DeserializeObject<Order>(orderResponse);
+        StateHasChanged();
+    }
+
+
+    public async void OnRowChanged(int index, OrderProduct product)
+    {
+        List<OrderProduct> products = OrderInfo.OrderProducts.ToList();
+        products[index] = product;
+        OrderInfo.OrderProducts = products;
+        JObject json = new JObject(new JProperty("order", JToken.FromObject(OrderInfo)));
+
+        var request = new StringContent(json.ToString(), Encoding.UTF8, "application/json");
+        var response = await client.PutAsync($"/api/orders/{OrderInfo.Id}", request);
+    }
+}

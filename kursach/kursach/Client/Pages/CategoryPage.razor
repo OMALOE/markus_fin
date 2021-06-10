@@ -1,0 +1,46 @@
+﻿@page "/categories/{categoryID}"
+@inject HttpClient client
+@inject NavigationManager NM;
+
+<div class="d-flex flex-column">
+    <Separator Title="Вот товары в выбранной вами категории:" />
+    @if (IsLoading) {
+        <span>Loading...</span>
+    }
+    <div class="d-flex flex-wrap">
+        @if(Products.Count != 0) { 
+            @foreach (var item in Products)
+            {
+                <ProductCard ProductData="item"/>
+            }
+        }
+    </div>
+</div>
+@code {
+    [Parameter]
+    public string CategoryId { get; set; }
+    public Category Category { get; set; } = new Category();
+    public List<Product> Products { get; set; } = new List<Product>();
+    public bool IsLoading { get; set; } = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var pp = new List<Product>();
+        Category = await client.GetFromJsonAsync<Category>($"/api/products/categories/{CategoryId}");
+        foreach (var item in Category.Subcategories)
+        {
+            foreach (var ts in item.TagsSubcategories)
+            {
+                var p = await client.GetFromJsonAsync<List<Product>>($"/api/Products/categories/subcategories/tags/{ts.Tag.Id}/products");
+                Console.WriteLine(p.Count);
+                pp.AddRange(p);
+            }
+        }
+        Console.WriteLine(pp.Count);
+        Console.WriteLine(pp[0].Fullname);
+        pp.ForEach(p => Products.Add(p));
+        IsLoading = false;
+        StateHasChanged();
+    }
+}
+

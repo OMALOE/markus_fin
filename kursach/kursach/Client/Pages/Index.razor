@@ -1,0 +1,43 @@
+﻿@page "/"
+@inject HttpClient client
+@inject NavigationManager NM
+@using Newtonsoft.Json;
+
+<Separator Title="Новинки"/>
+
+<div class="container-fluid p-0 d-flex flex-row scrollbar" style="overflow:scroll;overflow-y: hidden;">
+    @foreach (var item in Products.OrderByDescending(p => p.CreationDate).Skip(10).Take(10))
+	{
+        <ProductCard ProductData="item"/>
+	}
+</div>
+
+<Separator Title="Рекоммендации" />
+
+<div class="container-fluid p-0 d-flex flex-row scrollbar" style="overflow:scroll;overflow-y: hidden;">
+    @foreach (var item in Products.Skip(20).Take(10))
+    {
+        <ProductCard ProductData="item" />
+    }
+</div>
+
+<Separator Title="Прочие товары"/>
+
+<div class="container-fluid d-flex flex-wrap justify-content-between">
+    @foreach (var item in Products.Skip(30))
+    {
+        <ProductCard ProductData="item" />
+    }
+</div>
+
+@code{ 
+
+    public List<Product> Products { get; set; } = new List<Product>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Products = await client.GetFromJsonAsync<List<Product>>("/api/products");
+        Products = Products.OrderBy(p => Guid.NewGuid()).ToList();
+        Console.WriteLine(Products.Count);
+    }
+}

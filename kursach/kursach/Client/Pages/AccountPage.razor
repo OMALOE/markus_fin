@@ -1,0 +1,43 @@
+﻿@page "/customers/{customerId}"
+@inject HttpClient client
+@inject NavigationManager NM;
+<Separator Title="Личный кабинет" />
+
+<div class="d-flex flex-column">
+    <img style="width:100px; height: 100px;" src="@(CustomerData?.Avatar == null ? BlankPictureUrl : $"{client.BaseAddress}api/{CustomerData?.Avatar}")" />
+    <span>@CustomerData?.Firstname @CustomerData?.Lastname</span>
+    <span>@CustomerData?.Bio</span>
+    @if (CustomerData == null)
+    {
+        <img width="100" src="Spinner.svg" />
+    }
+    <Separator Title="Компании" />
+    <a class="btn btn-primary" style="width: 200px;" href="@($"/companies/new?customerId={CustomerId}")">Создать фирму</a>
+    @if (CustomerAdmins.Count == 0)
+    {
+        <img width="100" src="Spinner.svg" />
+    }
+    <div class="d-flex flex-wrap">
+        @foreach (var item in CustomerAdmins)
+        {
+            <NavLink href="@($"/companies/{item.Companyid}")">Название компании: @item.Company.PublicName ; Роль: @item.Role</NavLink>
+        }
+    </div>
+</div>
+
+
+@code {
+    [Parameter]
+    public string CustomerId { get; set; }
+    public Customer CustomerData { get; set; }
+    public List<CompanyAdmin> CustomerAdmins { get; set; } = new List<CompanyAdmin>();
+    private string BlankPictureUrl = "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_640.png";
+
+    protected override async Task OnInitializedAsync()
+    {
+        CustomerData = await client.GetFromJsonAsync<Customer>($"/api/customers/{CustomerId}");
+        StateHasChanged();
+        CustomerAdmins = await client.GetFromJsonAsync<List<CompanyAdmin>>($"api/customers/{CustomerId}/companies");
+        StateHasChanged();
+    }
+}

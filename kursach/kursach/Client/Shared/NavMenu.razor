@@ -1,0 +1,75 @@
+﻿@inject Blazored.LocalStorage.ILocalStorageService localStorage    
+@inject CartHelper cartHelper
+
+<div class="container-fluid flex-row p-0" @onclick="ToggleNavMenu" style="height:100%">
+            <a class="p-0 d-flex align-items-center" style="height:100%;" href="/">
+                <span class="nav-header" style="font-size: 24px;">Markus</span>
+            </a>
+            @*<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>*@
+            <div class="d-flex flex-row justify-content-between" style="flex: 1">
+                <div class="navbar-nav justify-content-start">
+                    <NavLink class="nav-link" href="/"><span class="nav-header">Главная</span></NavLink>
+                    <NavLink class="nav-link" href="/categories"><span class="nav-header">Категории</span></NavLink>
+                    <NavLink class="nav-link" href="/companies"><span class="nav-header">Продавцы</span></NavLink>
+                </div>
+                <div class="d-flex flex-row align-items-center" style="flex:6;padding-right:50px;padding-left:50px;">
+                    <form class="d-flex flex-row align-items-center justify-content-between rounded-pill overflow-hidden" style="border:2px solid #cacaca;flex: 1;height:30px;">
+                        <input class="me-2 border-0" type="search" placeholder="Найти товары" aria-label="Search" style="height:40px;outline:none;padding:12px;width:100%;">
+                        <span class="oi oi-magnifying-glass" style="margin-right:10px;"></span>
+                    </form>
+                </div>
+                <div class="d-flex flex-row" style="flex: 1;justify-content:space-evenly;">
+                    
+                    <NavLink href="/cart">
+                        <div class="position-relative d-flex navbar-icon-container rounded-circle justify-content-center align-items-center text-center">
+                            <span class="material-icons" style="color:#ffffff;font-size:20px;">shopping_cart</span>
+                            <div class="position-absolute rounded-circle text-white align-items-center justify-content-center text-center" style="height:19px;min-width:19px;width:auto;background-color:#E8510C;right:-10px;top:-6px;line-height:19px;">
+                                <span style="font-size:14px;display: inline-block;line-height: normal;">
+                                    @cartHelper.Cart.Count
+                                </span>
+                            </div>
+                        </div>
+                    </NavLink>
+                    
+                </div>
+            </div>
+    </div>
+
+@code {
+    public List<OrderProduct> Cart { get; set; } = new List<OrderProduct>();
+    private bool collapseNavMenu = true;
+
+    private string NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        if(await localStorage.ContainKeyAsync("cart"))
+        {
+            Console.WriteLine(true);
+            Cart = await localStorage.GetItemAsync<List<OrderProduct>>("cart");
+            cartHelper.Cart = Cart;
+        }
+        cartHelper.OnCartUpdate += AddItemToCart;
+        cartHelper.OnCartClear += StateHasChanged;
+        cartHelper.OnCartDelete += DeleteItemFromCart;
+    }
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+
+    public async void AddItemToCart(OrderProduct product)
+    {
+        await localStorage.SetItemAsync<List<OrderProduct>>("cart", cartHelper.Cart);
+        StateHasChanged();
+    }
+    public async void DeleteItemFromCart(int index)
+    {
+        await localStorage.SetItemAsync<List<OrderProduct>>("cart", cartHelper.Cart);
+        StateHasChanged();
+    }
+}

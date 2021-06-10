@@ -1,0 +1,357 @@
+﻿@page "/companies/{companyId}/crm/products/new"
+@inject NavigationManager NM
+@inject HttpClient client
+@layout CRMLayout
+@using Newtonsoft.Json;
+@using Newtonsoft.Json.Linq;
+@using System.Globalization;
+@using System.ComponentModel.DataAnnotations;
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Создание товара</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <label>Тип товара</label>
+            <select class="form-select" aria-label="Default select example" @bind="productType">
+                <option value="@ProductType.Standart">Standart</option>
+                <option value="@ProductType.Variable">Variable</option>
+            </select>
+        </div>
+        <div class="btn-group me-2">
+            <a href="@($"companies/{CompanyId}/crm/products")" class="btn btn-sm btn-outline-danger">Отмена</a>
+        </div>
+    </div>
+</div>
+
+<div class="d-flex flex-column">
+    <div class="form-group">
+        <label class="fw-bold" for="exampleFormControlInput1">@(productType == ProductType.Variable ? "Общее название" : "Название") товара</label>
+        <input @oninput="OnFullnameChanged" type="email" class="form-control" id="exampleFormControlInput1" placeholder="Электробритва Philips">
+        <div class="d-flex flex-row align-items-center">
+            <span class="text-sm-left text-secondary">
+                <span class="material-icons verified-icon">bolt</span>
+                Постарайтесь, чтобы название товара было лаконичным и понятным. Так покупателям будет легче его найти.
+                И если у товара есть вариативные свойства (например: цвет, объем памяти, размер и т.п), не пишите это в данном поле, а укажите их в соответствующем разделе ниже.
+            </span>
+        </div>
+    </div>
+    @* Table with options *@
+    @if (productType == ProductType.Variable)
+    {
+        <span class="fw-bold">Вариативные характеристики товара</span>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Название</th>
+                    <th scope="col">Варианты</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in variativeOptions)
+                {
+                    <VariativeOptionRow Index="@variativeOptions.IndexOf(item)" OnRowChanged="OnVariativeRowChanged" OnRowDeleted="OnVariativeRowDeleted" Result="item" />
+                }
+            </tbody>
+        </table>
+        <button class="btn btn-primary" @onclick="OnAddVariativeClicked">Добавить</button>
+
+
+        <span class="fw-bold">Вариации</span>
+        @if (variativeOptions.All(o => o.Name != "" && o.Values.Count > 0 && o.Values.All(v => v != "")))
+        {
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Название</th>
+                        <th scope="col">Свойства</th>
+                        <th scope="col">Цена</th>
+                        <th scope="col">Количество</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in VariationProducts)
+                    {
+                        <VariationProductRow Index="VariationProducts.IndexOf(item)" Options="variativeOptions" OnVariationChanged="OnVariationChanged" />
+                    }
+                </tbody>
+            </table>
+            <button class="btn btn-primary" @onclick="OnAddVariantClicked">Добавить</button>
+        }
+    }
+
+    <hr class="dropdown-divider" />
+
+    <div class="form-group">
+        <label class="fw-bold" for="exampleFormControlTextarea1">Описание товара</label>
+        <textarea class="form-control" id="exampleFormControlTextarea1" rows="3" @bind="Description"></textarea>
+    </div>
+
+    <hr class="dropdown-divider" />
+
+    @if (productType == ProductType.Standart)
+    {
+        <div class="row">
+            <div class="col">
+                <label class="fw-bold" for="countryInput">Страна</label>
+                <input type="text" class="form-control" id="countryInput" placeholder="Россия">
+            </div>
+            <div class="col">
+                <label class="fw-bold" for="priceInput">Цена ($)</label>
+                <input type="number" class="form-control" id="priceInput" placeholder="123.45" min="0" @bind-value="product.Price">
+            </div>
+            <div class="col">
+                <label class="fw-bold" for="quentityInput">Количество на складе</label>
+                <input type="number" class="form-control" id="quantityInput" placeholder="Количество" min="0" step="1" @bind-value="product.Available">
+            </div>
+        </div>
+    }
+
+    <hr class="dropdown-divider" />
+
+    <div class="form-group">
+        <label class="fw-bold" for="exampleFormControlSelect1">Выбор тэга</label>
+        <select class="form-control bg-white" id="exampleFormControlSelect1" @bind="TagId">
+            @foreach (var item in tags)
+            {
+                <option value="@item.Id">@(tags.IndexOf(item)+1). @item.Name</option>
+            }
+        </select>
+    </div>
+
+    <hr class="dropdown-divider" />
+
+    <div class="form-group">
+        <label class="fw-bold" for="exampleFormControlSelect2">Привязка к товару</label>
+        @if (ReferenceProducts.Count == 0)
+        {
+            <input class="form-control" type="text" placeholder="Не найдено товаров для привязки" aria-label="Disabled input example" disabled readonly>
+        }
+        else
+        {
+            <select multiple class="form-control bg-white" id="exampleFormControlSelect2" @bind="ReferenceId">
+                @foreach (var item in ReferenceProducts)
+                {
+                    <option value="@item.Id">@(ReferenceProducts.IndexOf(item)+1). @item.Name</option>
+                }
+            </select>
+        }
+    </div>
+    <div class="d-flex flex-row align-items-center">
+        <span class="material-icons verified-icon">bolt</span>
+        <span class="text-sm-left text-secondary">
+            Это нужно для того, чтобы ваш товар могли сравнивать в цене и для удобства поиска.
+        </span>
+    </div>
+
+
+
+    <hr class="dropdown-divider" />
+    <button class="btn suppler-button" @onclick="OnAddProductClicked">Добавить товар</button>
+</div>
+
+
+@code {
+    [Parameter]
+    public string CompanyId { get; set; }
+
+    private Product product = new Product();
+    public List<ReferenceProduct> ReferenceProducts { get; set; } = new List<ReferenceProduct>();
+    private List<Tag> tags = new List<Tag>();
+    private List<Option> variativeOptions = new List<Option>();
+    private List<VariationOption> Variations = new List<VariationOption>();
+    private List<Product> VariationProducts = new List<Product>();
+    private ProductType productType = ProductType.Standart;
+    private string VariationId = Guid.NewGuid().ToString();
+    public string Name { get; set; }
+    public string TagId { get; set; }
+    public string ReferenceId { get; set; } = null;
+    public string Description { get; set; }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        tags = await client.GetFromJsonAsync<List<Tag>>("/api/products/categories/subcategories/tags");
+        product.Companyid = CompanyId;
+        product.Id = Guid.NewGuid().ToString();
+        TagId = tags[0].Id;
+    }
+
+    private async void OnFullnameChanged(ChangeEventArgs e)
+    {
+        product.Fullname = e.Value.ToString();
+        Console.WriteLine(product.Fullname);
+        if (product.Fullname != string.Empty)
+            ReferenceProducts = await client.GetFromJsonAsync<List<ReferenceProduct>>($"/api/products/references?productName={product.Fullname}");
+        ReferenceProducts.OrderBy(rp => rp.Name);
+        StateHasChanged();
+    }
+
+    private void OnDescriprionChanged(ChangeEventArgs e)
+    {
+        string description = e.Value.ToString();
+        product.Description = description;
+        foreach (var item in VariationProducts)
+        {
+            item.Description = description;
+        }
+        StateHasChanged();
+    }
+
+
+    private void OnReferenceChanged(ChangeEventArgs e)
+    {
+        Console.WriteLine(e.Value);
+        product.Referenceid = ((ReferenceProduct)(e.Value)).Id;
+        StateHasChanged();
+    }
+
+    private void OnTagChanged(ChangeEventArgs e)
+    {
+        string tagId = e.Value.ToString();
+        product.Tagid = tagId;
+        foreach (var item in VariationProducts)
+        {
+            item.Tagid = tagId;
+        }
+        StateHasChanged();
+    }
+
+    private void OnReferenceIdChanged(ChangeEventArgs e)
+    {
+        string referenceId = e.Value.ToString();
+        product.Referenceid = referenceId;
+        foreach (var item in VariationProducts)
+        {
+            item.Referenceid = referenceId;
+        }
+        StateHasChanged();
+    }
+
+    private void OnVariativeRowChanged(Option data, int index)
+    {
+        Console.WriteLine("Saved! index" + index);
+        variativeOptions[index] = data;
+        Console.WriteLine(variativeOptions);
+        Console.WriteLine($"option {index}: {data.Name} ; {data.Values.ToString()}");
+        Console.WriteLine(!variativeOptions.Any(o => o.Name == ""));
+        StateHasChanged();
+    }
+
+    private void OnAddVariantClicked()
+    {
+        VariationProducts.Add(new Product() {Id=Guid.NewGuid().ToString(), Companyid=CompanyId});
+        StateHasChanged();
+    }
+
+    private void OnAddVariativeClicked()
+    {
+        variativeOptions.Add(new Option());
+        StateHasChanged();
+    }
+
+    private void OnVariationDelete(int index)
+    {
+        Variations.RemoveAt(index);
+        VariationProducts.Remove(VariationProducts[index]);
+        StateHasChanged();
+    }
+
+    private void OnVariativeRowDeleted(int index)
+    {
+        variativeOptions.RemoveAt(index);
+        StateHasChanged();
+    }
+
+    private void OnVariationChanged(Variation variationRowData, List<VariationOption> variations, int index)
+    {
+        Product foundProduct = VariationProducts[index];
+        foundProduct.Fullname = variationRowData.Name;
+        foundProduct.Available = variationRowData.Quantity;
+        foundProduct.Price = variationRowData.Price;
+        foundProduct.VariationOptions = variations;
+
+        VariationProducts[index] = foundProduct;
+        StateHasChanged();
+    }
+
+    private async void OnAddProductClicked()
+    {
+        HttpResponseMessage response;
+        bool result = false;
+
+        if(productType == ProductType.Standart)
+        {
+            response = await PostProduct();
+            result = await HandleResponse(response);
+        }
+
+        if(productType == ProductType.Variable)
+        {
+            foreach (var item in VariationProducts)
+            {
+                Console.WriteLine($"{item.Fullname} , {item.Price} , {item.Available}, {item.VariationOptions.Count}");
+                response = await PostVariableProduct(item);
+                result = await HandleResponse(response);
+                if (!result)
+                    return;
+            }
+        }
+
+        if (!result)
+            return;
+
+        NM.NavigateTo($"/companies/{CompanyId}/crm/products");
+    }
+
+    public async Task<HttpResponseMessage> PostProduct()
+    {
+        product.Referenceid = ReferenceId;
+        product.Tagid = TagId;
+        product.Description = Description;
+        JObject json = new JObject();
+        json.Add(new JProperty("product", JsonConvert.SerializeObject(product)));
+        Console.WriteLine(json["product"].ToString());
+        var data = new StringContent(json.ToString(), Encoding.UTF8, "application/json");
+        Console.WriteLine(await data.ReadAsStringAsync());
+        HttpResponseMessage response = await client.PostAsync($"/api/companies/{CompanyId}/products", data);
+        return response;
+
+    }
+
+    public async Task<HttpResponseMessage> PostVariableProduct(Product productData)
+    {
+        productData.Tagid = TagId;
+        productData.Referenceid = ReferenceId;
+        productData.Description = Description;
+        foreach (var item in productData.VariationOptions)
+        {
+            item.Id = VariationId;
+            item.ProductId = productData.Id;
+        }
+
+        JObject json = new JObject();
+
+        json.Add(new JProperty("product", JsonConvert.SerializeObject(productData)));
+
+        Console.WriteLine(json["product"].ToString());
+        var data = new StringContent(json.ToString(), Encoding.UTF8, "application/json");
+        Console.WriteLine(await data.ReadAsStringAsync());
+        HttpResponseMessage response = await client.PostAsync($"/api/companies/{CompanyId}/products", data);
+        return response;
+    }
+
+    public async Task<bool> HandleResponse(HttpResponseMessage response)
+    {
+        string message = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            Console.WriteLine(message);
+            return false;
+        }
+
+        return true;
+    }
+}

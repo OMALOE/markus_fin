@@ -1,0 +1,71 @@
+﻿@inject HttpClient client
+
+@if (!isEditing)
+{
+    <tr>
+        <th scope="row">@(Index + 1)</th>
+        <td>@OProduct.Product.Fullname</td>
+        <td>@OProduct.Amount</td>
+        <td>$@OProduct.TotalPrice</td>
+        <td>@OProduct.Discount</td>
+        <td>
+            <button class="btn btn-outline-secondary" @onclick="OnEditClicked">
+                <span class="material-icons">edit</span>
+            </button>
+        </td>
+    </tr>
+}
+else
+{
+    <tr>
+        <th scope="row">@(Index + 1)</th>
+        <td>@OProduct.Product.Fullname</td>
+        <td>
+            <input type="number" class="form-control" min="0" step="1" @bind="OProduct.Amount"/>
+        </td>
+        <td>$</td>
+        <td>@OProduct.Discount</td>
+        <td>
+            <button type="button" class="btn btn-outline-secondary" @onclick="OnEditClicked">
+                <span class="material-icons">@(isEditing ? "save" : "edit")</span>
+            </button>
+        </td>
+    </tr>
+}
+
+@code {
+    [Parameter]
+    public OrderProduct OProduct { get; set; }
+    [Parameter]
+    public int Index { get; set; }
+    [Parameter]
+    public Action<int, OrderProduct> NotifyRowSaved { get; set; }
+    private bool isEditing = false;
+    private decimal originalPrice = 0;
+
+    protected override void OnInitialized()
+    {
+        originalPrice = CalculateOriginalPrice();
+        StateHasChanged();
+    }
+
+
+    public decimal CalculateOriginalPrice()
+    {
+        return OProduct.TotalPrice / OProduct.Amount;
+    }
+
+    public void OnEditClicked()
+    {
+        isEditing = !isEditing;
+        OProduct.TotalPrice = OProduct.Amount * originalPrice - OProduct.Discount;
+        if(isEditing == false)
+        {
+            NotifyRowSaved?.Invoke(Index, OProduct);
+        }
+        Console.WriteLine(isEditing);
+        StateHasChanged();
+    }
+
+
+}
